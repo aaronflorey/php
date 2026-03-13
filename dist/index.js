@@ -208,6 +208,7 @@ async function fetchMatchingBinaries(version) {
 }
 async function downloadBinaries(binaries, outDir, dryRun, maxConcurrentDownloads) {
     await node_fs_1.promises.mkdir(outDir, { recursive: true });
+    const maxAttempts = 4;
     async function downloadOne(binary) {
         const sourceUrl = `https://dl.static-php.dev/${binary.sourcePath.replace(/^\/+/, "")}`;
         const targetPath = node_path_1.default.join(outDir, binary.releaseName);
@@ -215,20 +216,44 @@ async function downloadBinaries(binaries, outDir, dryRun, maxConcurrentDownloads
             console.log(`[dry-run] Would download ${sourceUrl} -> ${targetPath}`);
             return targetPath;
         }
-        console.log(`Downloading ${sourceUrl}`);
-        const response = await fetch(sourceUrl);
-        if (!response.ok || !response.body) {
-            throw new Error(`Failed to download ${sourceUrl}: ${response.status} ${response.statusText}`);
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            const attemptPrefix = maxAttempts > 1 ? ` (attempt ${attempt}/${maxAttempts})` : "";
+            console.log(`Downloading ${sourceUrl}${attemptPrefix}`);
+            try {
+                const response = await fetch(sourceUrl);
+                if (!response.ok || !response.body) {
+                    const reason = `Failed to download ${sourceUrl}: ${response.status} ${response.statusText}`;
+                    if (attempt < maxAttempts && (0, lib_1.isRetryableDownloadStatus)(response.status)) {
+                        const delayMs = (0, lib_1.calculateRetryDelayMs)(attempt);
+                        console.log(`Transient download failure, retrying in ${delayMs}ms: ${reason}`);
+                        await sleep(delayMs);
+                        continue;
+                    }
+                    throw new Error(reason);
+                }
+                const nodeStream = node_stream_1.Readable.fromWeb(response.body);
+                await (0, promises_1.pipeline)(nodeStream, (0, node_fs_1.createWriteStream)(targetPath));
+                const stat = await node_fs_1.promises.stat(targetPath);
+                const MIN_SIZE = 5 * 1024 * 1024;
+                if (stat.size < MIN_SIZE) {
+                    throw new Error(`Downloaded file ${binary.releaseName} is only ${(stat.size / 1024 / 1024).toFixed(1)}MB — expected at least 5MB.`);
+                }
+                console.log(`Saved ${targetPath} (${(stat.size / 1024 / 1024).toFixed(1)}MB)`);
+                return targetPath;
+            }
+            catch (error) {
+                await node_fs_1.promises.rm(targetPath, { force: true });
+                if (attempt < maxAttempts && isRetryableError(error)) {
+                    const delayMs = (0, lib_1.calculateRetryDelayMs)(attempt);
+                    const message = error instanceof Error ? error.message : String(error);
+                    console.log(`Transient download error, retrying in ${delayMs}ms: ${message}`);
+                    await sleep(delayMs);
+                    continue;
+                }
+                throw error;
+            }
         }
-        const nodeStream = node_stream_1.Readable.fromWeb(response.body);
-        await (0, promises_1.pipeline)(nodeStream, (0, node_fs_1.createWriteStream)(targetPath));
-        const stat = await node_fs_1.promises.stat(targetPath);
-        const MIN_SIZE = 5 * 1024 * 1024;
-        if (stat.size < MIN_SIZE) {
-            throw new Error(`Downloaded file ${binary.releaseName} is only ${(stat.size / 1024 / 1024).toFixed(1)}MB — expected at least 5MB.`);
-        }
-        console.log(`Saved ${targetPath} (${(stat.size / 1024 / 1024).toFixed(1)}MB)`);
-        return targetPath;
+        throw new Error(`Unreachable retry state for ${sourceUrl}.`);
     }
     const workerCount = Math.max(1, Math.min(maxConcurrentDownloads, binaries.length));
     const downloaded = new Array(binaries.length);
@@ -245,6 +270,21 @@ async function downloadBinaries(binaries, outDir, dryRun, maxConcurrentDownloads
     }
     await Promise.all(Array.from({ length: workerCount }, () => worker()));
     return downloaded;
+}
+function isRetryableError(error) {
+    if (!error || typeof error !== "object") {
+        return false;
+    }
+    const maybeError = error;
+    if (typeof maybeError.name === "string" && maybeError.name === "AbortError") {
+        return true;
+    }
+    return typeof maybeError.code === "string";
+}
+async function sleep(ms) {
+    await new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
 }
 async function gh(args) {
     const { stdout } = await execFileAsync("gh", args);
@@ -288,6 +328,8 @@ main().catch((error) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isRetryableDownloadStatus = isRetryableDownloadStatus;
+exports.calculateRetryDelayMs = calculateRetryDelayMs;
 exports.buildReleaseBody = buildReleaseBody;
 exports.parseBinaryName = parseBinaryName;
 exports.buildBinaryPattern = buildBinaryPattern;
@@ -296,6 +338,13 @@ exports.selectRecentVersions = selectRecentVersions;
 exports.extractVersionFromTarballName = extractVersionFromTarballName;
 exports.isFullSemver = isFullSemver;
 exports.resolveVersion = resolveVersion;
+function isRetryableDownloadStatus(status) {
+    return status === 408 || status === 425 || status === 429 || status >= 500;
+}
+function calculateRetryDelayMs(attempt, baseDelayMs = 1_000, maxDelayMs = 10_000) {
+    const exponential = baseDelayMs * 2 ** Math.max(0, attempt - 1);
+    return Math.min(maxDelayMs, exponential);
+}
 function buildReleaseBody(version) {
     const major = version.split(".")[0] ?? version;
     return [

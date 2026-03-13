@@ -7,8 +7,10 @@ import type { ReadableStream as NodeReadableStream } from "node:stream/web";
 import { promisify } from "node:util";
 import {
   buildReleaseBody,
+  calculateRetryDelayMs,
   extractVersionFromTarballName,
   isFullSemver,
+  isRetryableDownloadStatus,
   resolveVersion,
   selectBinaries,
   selectRecentVersions,
@@ -282,6 +284,7 @@ async function downloadBinaries(
   maxConcurrentDownloads: number
 ): Promise<string[]> {
   await fs.mkdir(outDir, { recursive: true });
+  const maxAttempts = 4;
 
   async function downloadOne(binary: MatchedBinary): Promise<string> {
     const sourceUrl = `https://dl.static-php.dev/${binary.sourcePath.replace(/^\/+/, "")}`;
@@ -292,23 +295,50 @@ async function downloadBinaries(
       return targetPath;
     }
 
-    console.log(`Downloading ${sourceUrl}`);
-    const response = await fetch(sourceUrl);
-    if (!response.ok || !response.body) {
-      throw new Error(`Failed to download ${sourceUrl}: ${response.status} ${response.statusText}`);
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const attemptPrefix = maxAttempts > 1 ? ` (attempt ${attempt}/${maxAttempts})` : "";
+      console.log(`Downloading ${sourceUrl}${attemptPrefix}`);
+
+      try {
+        const response = await fetch(sourceUrl);
+        if (!response.ok || !response.body) {
+          const reason = `Failed to download ${sourceUrl}: ${response.status} ${response.statusText}`;
+          if (attempt < maxAttempts && isRetryableDownloadStatus(response.status)) {
+            const delayMs = calculateRetryDelayMs(attempt);
+            console.log(`Transient download failure, retrying in ${delayMs}ms: ${reason}`);
+            await sleep(delayMs);
+            continue;
+          }
+          throw new Error(reason);
+        }
+
+        const nodeStream = Readable.fromWeb(response.body as unknown as NodeReadableStream<Uint8Array>);
+        await pipeline(nodeStream, createWriteStream(targetPath));
+
+        const stat = await fs.stat(targetPath);
+        const MIN_SIZE = 5 * 1024 * 1024;
+        if (stat.size < MIN_SIZE) {
+          throw new Error(`Downloaded file ${binary.releaseName} is only ${(stat.size / 1024 / 1024).toFixed(1)}MB — expected at least 5MB.`);
+        }
+
+        console.log(`Saved ${targetPath} (${(stat.size / 1024 / 1024).toFixed(1)}MB)`);
+        return targetPath;
+      } catch (error) {
+        await fs.rm(targetPath, { force: true });
+
+        if (attempt < maxAttempts && isRetryableError(error)) {
+          const delayMs = calculateRetryDelayMs(attempt);
+          const message = error instanceof Error ? error.message : String(error);
+          console.log(`Transient download error, retrying in ${delayMs}ms: ${message}`);
+          await sleep(delayMs);
+          continue;
+        }
+
+        throw error;
+      }
     }
 
-    const nodeStream = Readable.fromWeb(response.body as unknown as NodeReadableStream<Uint8Array>);
-    await pipeline(nodeStream, createWriteStream(targetPath));
-
-    const stat = await fs.stat(targetPath);
-    const MIN_SIZE = 5 * 1024 * 1024;
-    if (stat.size < MIN_SIZE) {
-      throw new Error(`Downloaded file ${binary.releaseName} is only ${(stat.size / 1024 / 1024).toFixed(1)}MB — expected at least 5MB.`);
-    }
-
-    console.log(`Saved ${targetPath} (${(stat.size / 1024 / 1024).toFixed(1)}MB)`);
-    return targetPath;
+    throw new Error(`Unreachable retry state for ${sourceUrl}.`);
   }
 
   const workerCount = Math.max(1, Math.min(maxConcurrentDownloads, binaries.length));
@@ -330,6 +360,25 @@ async function downloadBinaries(
 
   await Promise.all(Array.from({ length: workerCount }, () => worker()));
   return downloaded;
+}
+
+function isRetryableError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const maybeError = error as { name?: unknown; code?: unknown };
+  if (typeof maybeError.name === "string" && maybeError.name === "AbortError") {
+    return true;
+  }
+
+  return typeof maybeError.code === "string";
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function gh(args: string[]): Promise<string> {

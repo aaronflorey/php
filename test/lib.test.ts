@@ -1,5 +1,14 @@
 import { describe, expect, it } from "bun:test";
-import { buildReleaseBody, isFullSemver, parseBinaryName, resolveVersion, selectBinaries, selectRecentVersions } from "../src/lib";
+import {
+  buildReleaseBody,
+  calculateRetryDelayMs,
+  isFullSemver,
+  isRetryableDownloadStatus,
+  parseBinaryName,
+  resolveVersion,
+  selectBinaries,
+  selectRecentVersions
+} from "../src/lib";
 
 describe("parseBinaryName", () => {
   it("parses tar.gz binaries", () => {
@@ -114,5 +123,31 @@ describe("resolveVersion", () => {
   it("returns null when nothing matches", () => {
     expect(resolveVersion("9", versions)).toBeNull();
     expect(resolveVersion("8.5", versions)).toBeNull();
+  });
+});
+
+describe("isRetryableDownloadStatus", () => {
+  it("returns true for transient HTTP statuses", () => {
+    expect(isRetryableDownloadStatus(408)).toBe(true);
+    expect(isRetryableDownloadStatus(425)).toBe(true);
+    expect(isRetryableDownloadStatus(429)).toBe(true);
+    expect(isRetryableDownloadStatus(500)).toBe(true);
+    expect(isRetryableDownloadStatus(503)).toBe(true);
+  });
+
+  it("returns false for permanent HTTP statuses", () => {
+    expect(isRetryableDownloadStatus(400)).toBe(false);
+    expect(isRetryableDownloadStatus(401)).toBe(false);
+    expect(isRetryableDownloadStatus(403)).toBe(false);
+    expect(isRetryableDownloadStatus(404)).toBe(false);
+  });
+});
+
+describe("calculateRetryDelayMs", () => {
+  it("uses capped exponential backoff", () => {
+    expect(calculateRetryDelayMs(1)).toBe(1000);
+    expect(calculateRetryDelayMs(2)).toBe(2000);
+    expect(calculateRetryDelayMs(3)).toBe(4000);
+    expect(calculateRetryDelayMs(5)).toBe(10000);
   });
 });

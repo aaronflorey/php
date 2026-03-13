@@ -17,6 +17,15 @@ export type MatchedBinary = {
   releaseName: string;
 };
 
+export function isRetryableDownloadStatus(status: number): boolean {
+  return status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+export function calculateRetryDelayMs(attempt: number, baseDelayMs = 1_000, maxDelayMs = 10_000): number {
+  const exponential = baseDelayMs * 2 ** Math.max(0, attempt - 1);
+  return Math.min(maxDelayMs, exponential);
+}
+
 export function buildReleaseBody(version: string): string {
   const major = version.split(".")[0] ?? version;
   return [
