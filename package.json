@@ -1,0 +1,20 @@
+{
+  "name": "php-release-cli",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build": "ncc build src/index.ts -o dist",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "hooks:install": "husky",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "@vercel/ncc": "^0.38.4",
+    "bun-types": "^1.3.10",
+    "husky": "^9.1.7",
+    "typescript": "^5.9.2"
+  }
+}

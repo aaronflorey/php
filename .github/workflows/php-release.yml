@@ -17,74 +17,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Fetch PHP CLI tarballs for version ${{ inputs.version }}
+      - name: Run release CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ inputs.version }}"
-          echo "Fetching tarballs for PHP version: $VERSION"
-
-          # Create directory for downloads
-          mkdir -p downloads
-
-          # Fetch file listings using JSON API and find matching tarballs
-          curl -sS "https://dl.static-php.dev/static-php-cli/bulk/?format=json" | \
-            jq -r ".[] | select(.name | test(\"php-${VERSION}-cli\")) | .full_path" \
-            >> matching_filepaths.txt
-
-          curl -sS "https://dl.static-php.dev/static-php-cli/windows/spc-max/?format=json" | \
-            jq -r ".[] | select(.name | test(\"php-${VERSION}-cli\")) | .full_path" \
-            >> matching_filepaths.txt
-
-          # exit if matching_filepaths.txt is empty
-          if [ ! -s matching_filepaths.txt ]; then
-            echo "Error: No matching file paths found"
-            exit 1
-          fi
-
-          echo "Found matching file paths:"
-          cat matching_filepaths.txt
-
-          # Download and rename each file
-          while read -r filepath; do
-            filename=$(basename "$filepath")
-            echo "Downloading: $filename"
-            curl -L -o "downloads/$filename" "https://dl.static-php.dev/$filepath"
-
-            # Extract architecture and file extension for both .tar.gz and .zip files
-            if [[ "$filename" =~ php-${VERSION}-cli-(.+)\.tar\.gz$ ]]; then
-              arch="${BASH_REMATCH[1]}"
-              fileext="tar.gz"
-            elif [[ "$filename" =~ php-${VERSION}-cli-(.+)\.zip$ ]]; then
-              arch="${BASH_REMATCH[1]}"
-              fileext="zip"
-            else
-              echo "Error: Could not extract arch/file extension from $filename"
-              exit 1
-            fi
-
-            # Rename file to new format
-            new_filename="php-${VERSION}-${arch}.${fileext}"
-            mv "downloads/$filename" "downloads/$new_filename"
-            echo "Renamed to: $new_filename"
-          done < matching_filepaths.txt
-
-          echo "Final files in downloads directory:"
-          ls -la downloads/
-
-      - name: Extract major version
-        run: |
-          echo "VERSION_MAJOR=$(echo ${{ github.event.inputs.version }} | cut -d'.' -f1,1)" >> $GITHUB_ENV
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: "v${{ inputs.version }}"
-          draft: false
-          files: downloads/**
-          body: |
-            # PHP v${{ github.event.inputs.version }}
-
-            Changelog: [What's changed in v${{ inputs.version }}?](https://www.php.net/ChangeLog-${{ env.VERSION_MAJOR }}.php#${{ inputs.version }})
-
-            Sources:
-              * https://dl.static-php.dev/static-php-cli/bulk/
-              * https://dl.static-php.dev/static-php-cli/windows/spc-max/
+          node dist/index.js release \
+            --version "${{ inputs.version }}" \
+            --owner "${{ github.repository_owner }}" \
+            --repo "${{ github.event.repository.name }}"

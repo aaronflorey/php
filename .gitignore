@@ -1,0 +1,5 @@
+node_modules/
+downloads/
+dist-ts/
+matching_filepaths.txt
+php_versions.txt
