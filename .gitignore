@@ -1,5 +1,6 @@
 node_modules/
 downloads/
 dist-ts/
+.tmp/
 matching_filepaths.txt
 php_versions.txt

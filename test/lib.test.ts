@@ -1,144 +1,178 @@
 import { describe, expect, it } from "bun:test";
 import {
   buildReleaseBody,
+  buildVersionPlan,
   calculateRetryDelayMs,
-  isFullSemver,
+  compareVersions,
+  diffMissingAssets,
+  extractVersionFromSourceTarball,
+  extractVersionsFromChangelog,
+  indexBinariesByVersion,
   isRetryableDownloadStatus,
-  parseBinaryName,
-  resolveVersion,
-  selectBinaries,
-  selectRecentVersions
+  parseSourceBinaryName,
+  parseVersion,
+  selectVersionsForMinor,
+  type SourceFile
 } from "../src/lib";
 
-describe("parseBinaryName", () => {
-  it("parses tar.gz binaries", () => {
-    expect(parseBinaryName("php-8.1.33-cli-linux-x86_64.tar.gz", "8.1.33")).toEqual({
-      sourceName: "php-8.1.33-cli-linux-x86_64.tar.gz",
-      arch: "linux-x86_64",
-      extension: "tar.gz",
-      releaseName: "php-8.1.33-linux-x86_64.tar.gz"
-    });
+describe("parseVersion", () => {
+  it("parses numeric semver versions", () => {
+    expect(parseVersion("8.4.21")).toEqual({ major: 8, minor: 4, patch: 21 });
   });
 
-  it("parses zip binaries", () => {
-    expect(parseBinaryName("php-8.1.33-cli-windows-x64.zip", "8.1.33")).toEqual({
-      sourceName: "php-8.1.33-cli-windows-x64.zip",
-      arch: "windows-x64",
-      extension: "zip",
-      releaseName: "php-8.1.33-windows-x64.zip"
-    });
-  });
-
-  it("ignores unrelated names", () => {
-    expect(parseBinaryName("php-8.2.0-fpm-linux-x86_64.tar.gz", "8.2.0")).toBeNull();
+  it("rejects invalid versions", () => {
+    expect(() => parseVersion("8.4")).toThrow("Invalid PHP version");
   });
 });
 
-describe("selectBinaries", () => {
-  it("filters and maps matching files", () => {
-    const items = selectBinaries(
-      [
-        { name: "php-8.3.10-cli-linux-aarch64.tar.gz", full_path: "static-php-cli/bulk/php-8.3.10-cli-linux-aarch64.tar.gz" },
-        { name: "php-8.3.10-cli-windows-x64.zip", full_path: "static-php-cli/windows/spc-max/php-8.3.10-cli-windows-x64.zip" },
-        { name: "php-8.3.10-fpm-linux-aarch64.tar.gz", full_path: "static-php-cli/bulk/php-8.3.10-fpm-linux-aarch64.tar.gz" }
-      ],
-      "8.3.10"
-    );
+describe("compareVersions", () => {
+  it("sorts versions numerically", () => {
+    expect(["8.4.9", "8.4.21", "8.4.10"].sort(compareVersions)).toEqual(["8.4.9", "8.4.10", "8.4.21"]);
+  });
+});
 
-    expect(items.map((item) => item.releaseName).sort()).toEqual([
-      "php-8.3.10-linux-aarch64.tar.gz",
-      "php-8.3.10-windows-x64.zip"
+describe("extractVersionsFromChangelog", () => {
+  it("extracts unique PHP 8 versions from changelog headings", () => {
+    const changelog = `
+      <h3>Version 8.4.21</h3>
+      <h3>Version 8.4.20</h3>
+      <h3>Version 8.5.6</h3>
+      <h3>Version 8.4.21</h3>
+    `;
+
+    expect(extractVersionsFromChangelog(changelog)).toEqual(["8.4.20", "8.4.21", "8.5.6"]);
+  });
+});
+
+describe("selectVersionsForMinor", () => {
+  it("returns only official versions within latest-10 patch window", () => {
+    const official = [
+      "8.4.9",
+      "8.4.10",
+      "8.4.11",
+      "8.4.12",
+      "8.4.13",
+      "8.4.14",
+      "8.4.15",
+      "8.4.16",
+      "8.4.17",
+      "8.4.18",
+      "8.4.19",
+      "8.4.20",
+      "8.4.21"
+    ];
+
+    expect(selectVersionsForMinor("8.4.21", official, 10)).toEqual([
+      "8.4.11",
+      "8.4.12",
+      "8.4.13",
+      "8.4.14",
+      "8.4.15",
+      "8.4.16",
+      "8.4.17",
+      "8.4.18",
+      "8.4.19",
+      "8.4.20",
+      "8.4.21"
+    ]);
+  });
+
+  it("does not invent missing official patch releases", () => {
+    const official = ["8.3.20", "8.3.22", "8.3.24", "8.3.30", "8.3.31"];
+    expect(selectVersionsForMinor("8.3.31", official, 10)).toEqual(["8.3.22", "8.3.24", "8.3.30", "8.3.31"]);
+  });
+});
+
+describe("parseSourceBinaryName", () => {
+  it("normalizes SPC filenames into release asset names", () => {
+    expect(parseSourceBinaryName("php-8.4.20-cli-linux-x86_64.tar.gz", "/bulk/php-8.4.20-cli-linux-x86_64.tar.gz")).toEqual({
+      version: "8.4.20",
+      sourceName: "php-8.4.20-cli-linux-x86_64.tar.gz",
+      sourcePath: "/bulk/php-8.4.20-cli-linux-x86_64.tar.gz",
+      arch: "linux-x86_64",
+      extension: "tar.gz",
+      assetName: "php-8.4.20-linux-x86_64.tar.gz"
+    });
+  });
+
+  it("ignores non-cli assets", () => {
+    expect(parseSourceBinaryName("php-8.4.20-fpm-linux-x86_64.tar.gz", "/bulk/php-8.4.20-fpm-linux-x86_64.tar.gz")).toBeNull();
+  });
+});
+
+describe("indexBinariesByVersion", () => {
+  it("groups CLI binaries by version and dedupes asset names", () => {
+    const files: SourceFile[] = [
+      { name: "php-8.4.20-cli-linux-x86_64.tar.gz", full_path: "/bulk/php-8.4.20-cli-linux-x86_64.tar.gz" },
+      { name: "php-8.4.20-cli-win.zip", full_path: "/windows/php-8.4.20-cli-win.zip" },
+      { name: "php-8.4.20-cli-win.zip", full_path: "/windows/php-8.4.20-cli-win.zip" }
+    ];
+
+    const grouped = indexBinariesByVersion(files);
+    expect(grouped.get("8.4.20")?.map((binary) => binary.assetName)).toEqual([
+      "php-8.4.20-linux-x86_64.tar.gz",
+      "php-8.4.20-win.zip"
     ]);
   });
 });
 
+describe("diffMissingAssets", () => {
+  it("returns only assets missing from the release", () => {
+    const expected = indexBinariesByVersion([
+      { name: "php-8.4.20-cli-linux-x86_64.tar.gz", full_path: "/bulk/php-8.4.20-cli-linux-x86_64.tar.gz" },
+      { name: "php-8.4.20-cli-win.zip", full_path: "/windows/php-8.4.20-cli-win.zip" }
+    ]).get("8.4.20") ?? [];
+
+    const missing = diffMissingAssets(expected, ["php-8.4.20-win.zip"]);
+    expect(missing.map((asset) => asset.assetName)).toEqual(["php-8.4.20-linux-x86_64.tar.gz"]);
+  });
+});
+
+describe("buildVersionPlan", () => {
+  it("produces release metadata from expected assets", () => {
+    const assets = indexBinariesByVersion([
+      { name: "php-8.0.30-cli-win.zip", full_path: "/windows/php-8.0.30-cli-win.zip" }
+    ]).get("8.0.30") ?? [];
+
+    expect(buildVersionPlan("8.0.30", assets)).toEqual({
+      version: "8.0.30",
+      tag: "v8.0.30",
+      releaseTitle: "PHP v8.0.30",
+      expectedAssets: [
+        {
+          version: "8.0.30",
+          sourceName: "php-8.0.30-cli-win.zip",
+          sourcePath: "/windows/php-8.0.30-cli-win.zip",
+          arch: "win",
+          extension: "zip",
+          assetName: "php-8.0.30-win.zip"
+        }
+      ]
+    });
+  });
+});
+
 describe("buildReleaseBody", () => {
-  it("contains changelog URL and sources", () => {
-    const body = buildReleaseBody("8.4.1");
-    expect(body).toContain("ChangeLog-8.php#8.4.1");
-    expect(body).toContain("https://dl.static-php.dev/static-php-cli/bulk/");
-    expect(body).toContain("https://dl.static-php.dev/static-php-cli/windows/spc-max/");
+  it("includes changelog and source references", () => {
+    const body = buildReleaseBody("8.4.21");
+    expect(body).toContain("ChangeLog-8.php#8.4.21");
+    expect(body).toContain("static-php-cli/bulk");
+    expect(body).toContain("static-php-cli/windows/spc-max");
   });
 });
 
-describe("selectRecentVersions", () => {
-  it("returns sorted unique versions modified within the window", () => {
-    const now = Date.parse("2026-03-13T00:00:00Z");
-    const entries = [
-      {
-        name: "php-8.3.21-cli-linux-x86_64.tar.gz",
-        is_dir: false,
-        last_modified: "2026-03-12 01:00:00"
-      },
-      {
-        name: "php-8.3.21-cli-linux-aarch64.tar.gz",
-        is_dir: false,
-        last_modified: "2026-03-12 02:00:00"
-      },
-      {
-        name: "php-8.2.29-cli-linux-x86_64.tar.gz",
-        is_dir: false,
-        last_modified: "2026-03-09 01:00:00"
-      },
-      {
-        name: "php-8.4.0-fpm-linux-x86_64.tar.gz",
-        is_dir: false,
-        last_modified: "2026-03-12 01:00:00"
-      }
-    ];
-
-    expect(selectRecentVersions(entries, 2, now)).toEqual(["8.3.21"]);
-  });
-});
-
-describe("isFullSemver", () => {
-  it("accepts X.Y.Z", () => {
-    expect(isFullSemver("8.1.33")).toBe(true);
-    expect(isFullSemver("10.0.0")).toBe(true);
-  });
-
-  it("rejects partial versions", () => {
-    expect(isFullSemver("8")).toBe(false);
-    expect(isFullSemver("8.4")).toBe(false);
-    expect(isFullSemver("")).toBe(false);
-  });
-});
-
-describe("resolveVersion", () => {
-  const versions = ["8.1.30", "8.1.33", "8.2.28", "8.3.10", "8.3.9", "8.4.1"];
-
-  it("resolves major-only prefix to latest", () => {
-    expect(resolveVersion("8", versions)).toBe("8.4.1");
-  });
-
-  it("resolves major.minor prefix to latest patch", () => {
-    expect(resolveVersion("8.1", versions)).toBe("8.1.33");
-    expect(resolveVersion("8.3", versions)).toBe("8.3.10");
-  });
-
-  it("resolves exact full version", () => {
-    expect(resolveVersion("8.2.28", versions)).toBe("8.2.28");
-  });
-
-  it("returns null when nothing matches", () => {
-    expect(resolveVersion("9", versions)).toBeNull();
-    expect(resolveVersion("8.5", versions)).toBeNull();
+describe("extractVersionFromSourceTarball", () => {
+  it("extracts PHP versions from official source filenames", () => {
+    expect(extractVersionFromSourceTarball("php-8.4.21.tar.gz")).toBe("8.4.21");
+    expect(extractVersionFromSourceTarball("php-8.4.21.zip")).toBeNull();
   });
 });
 
 describe("isRetryableDownloadStatus", () => {
-  it("returns true for transient HTTP statuses", () => {
+  it("recognizes transient HTTP failures", () => {
     expect(isRetryableDownloadStatus(408)).toBe(true);
-    expect(isRetryableDownloadStatus(425)).toBe(true);
     expect(isRetryableDownloadStatus(429)).toBe(true);
-    expect(isRetryableDownloadStatus(500)).toBe(true);
     expect(isRetryableDownloadStatus(503)).toBe(true);
-  });
-
-  it("returns false for permanent HTTP statuses", () => {
-    expect(isRetryableDownloadStatus(400)).toBe(false);
-    expect(isRetryableDownloadStatus(401)).toBe(false);
-    expect(isRetryableDownloadStatus(403)).toBe(false);
     expect(isRetryableDownloadStatus(404)).toBe(false);
   });
 });

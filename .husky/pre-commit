@@ -1,2 +1,2 @@
-bun run build
-git add dist/index.js
+bun run test
+bun run typecheck

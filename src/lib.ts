@@ -1,24 +1,67 @@
+export type PhpVersion = {
+  major: number;
+  minor: number;
+  patch: number;
+};
+
 export type SourceFile = {
   name: string;
   full_path: string;
 };
 
-export type IndexEntry = {
-  name: string;
-  last_modified?: string;
-  is_dir?: boolean;
-};
-
 export type MatchedBinary = {
+  version: string;
   sourceName: string;
   sourcePath: string;
   arch: string;
   extension: "tar.gz" | "zip";
-  releaseName: string;
+  assetName: string;
 };
 
-export function isRetryableDownloadStatus(status: number): boolean {
-  return status === 408 || status === 425 || status === 429 || status >= 500;
+export type VersionSyncPlan = {
+  version: string;
+  tag: string;
+  releaseTitle: string;
+  expectedAssets: MatchedBinary[];
+};
+
+const SOURCE_BINARY_PATTERN = /^php-(8\.\d+\.\d+)-cli-(.+)\.(tar\.gz|zip)$/;
+const CHANGELOG_VERSION_PATTERN = /Version\s+(8\.\d+\.\d+)/g;
+const SOURCE_TARBALL_PATTERN = /^php-(8\.\d+\.\d+)\.tar\.(?:gz|bz2|xz)$/;
+
+export function parseVersion(version: string): PhpVersion {
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+  if (!match) {
+    throw new Error(`Invalid PHP version '${version}'. Expected X.Y.Z.`);
+  }
+
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3])
+  };
+}
+
+export function compareVersions(a: string, b: string): number {
+  const left = parseVersion(a);
+  const right = parseVersion(b);
+
+  if (left.major !== right.major) return left.major - right.major;
+  if (left.minor !== right.minor) return left.minor - right.minor;
+  return left.patch - right.patch;
+}
+
+export function buildReleaseBody(version: string): string {
+  return [
+    `# PHP v${version}`,
+    "",
+    `Official release: [PHP ${version}](https://www.php.net/releases/index.php?json&version=${version.slice(0, version.lastIndexOf("."))})`,
+    `Changelog: [What's changed in v${version}?](https://www.php.net/ChangeLog-8.php#${version})`,
+    "",
+    "Mirrored CLI binaries sourced from:",
+    "- https://dl.static-php.dev/static-php-cli/bulk/",
+    "- https://dl.static-php.dev/static-php-cli/windows/spc-max/"
+  ].join("\n");
 }
 
 export function calculateRetryDelayMs(attempt: number, baseDelayMs = 1_000, maxDelayMs = 10_000): number {
@@ -26,124 +69,87 @@ export function calculateRetryDelayMs(attempt: number, baseDelayMs = 1_000, maxD
   return Math.min(maxDelayMs, exponential);
 }
 
-export function buildReleaseBody(version: string): string {
-  const major = version.split(".")[0] ?? version;
-  return [
-    `# PHP v${version}`,
-    "",
-    `Changelog: [What's changed in v${version}?](https://www.php.net/ChangeLog-${major}.php#${version})`,
-    "",
-    "Sources:",
-    "  * https://dl.static-php.dev/static-php-cli/bulk/",
-    "  * https://dl.static-php.dev/static-php-cli/windows/spc-max/"
-  ].join("\n");
+export function isRetryableDownloadStatus(status: number): boolean {
+  return status === 408 || status === 425 || status === 429 || status >= 500;
 }
 
-export function parseBinaryName(name: string, version: string, compiled?: RegExp): Omit<MatchedBinary, "sourcePath"> | null {
-  const pattern = compiled ?? buildBinaryPattern(version);
-  const match = name.match(pattern);
+export function extractVersionFromSourceTarball(filename: string): string | null {
+  return filename.match(SOURCE_TARBALL_PATTERN)?.[1] ?? null;
+}
+
+export function extractVersionsFromChangelog(input: string): string[] {
+  const versions = new Set<string>();
+  for (const match of input.matchAll(CHANGELOG_VERSION_PATTERN)) {
+    versions.add(match[1]);
+  }
+  return [...versions].sort(compareVersions);
+}
+
+export function selectVersionsForMinor(latestVersion: string, officialVersions: string[], maxPreviousPatches: number): string[] {
+  const latest = parseVersion(latestVersion);
+  const minPatch = Math.max(0, latest.patch - maxPreviousPatches);
+
+  return officialVersions
+    .filter((version) => {
+      const parsed = parseVersion(version);
+      return parsed.major === latest.major && parsed.minor === latest.minor && parsed.patch >= minPatch && parsed.patch <= latest.patch;
+    })
+    .sort(compareVersions);
+}
+
+export function parseSourceBinaryName(name: string, fullPath: string): MatchedBinary | null {
+  const match = name.match(SOURCE_BINARY_PATTERN);
   if (!match) {
     return null;
   }
 
-  const arch = match[1];
-  const extension = match[2] as "tar.gz" | "zip";
+  const version = match[1];
+  const arch = match[2];
+  const extension = match[3] as "tar.gz" | "zip";
+
   return {
+    version,
     sourceName: name,
+    sourcePath: fullPath,
     arch,
     extension,
-    releaseName: `php-${version}-${arch}.${extension}`
+    assetName: `php-${version}-${arch}.${extension}`
   };
 }
 
-export function buildBinaryPattern(version: string): RegExp {
-  const escaped = version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`^php-${escaped}-cli-(.+)\\.(tar\\.gz|zip)$`);
-}
-
-export function selectBinaries(files: SourceFile[], version: string): MatchedBinary[] {
-  const pattern = buildBinaryPattern(version);
-  const out: MatchedBinary[] = [];
-  const seenPath = new Set<string>();
+export function indexBinariesByVersion(files: SourceFile[]): Map<string, MatchedBinary[]> {
+  const grouped = new Map<string, MatchedBinary[]>();
 
   for (const file of files) {
-    if (!file.full_path || seenPath.has(file.full_path)) {
-      continue;
-    }
-    seenPath.add(file.full_path);
-
-    const parsed = parseBinaryName(file.name, version, pattern);
+    const parsed = parseSourceBinaryName(file.name, file.full_path);
     if (!parsed) {
       continue;
     }
 
-    out.push({
-      ...parsed,
-      sourcePath: file.full_path
-    });
+    const existing = grouped.get(parsed.version) ?? [];
+    if (!existing.some((binary) => binary.assetName === parsed.assetName)) {
+      existing.push(parsed);
+    }
+    grouped.set(parsed.version, existing);
   }
 
-  return out;
-}
-
-export function selectRecentVersions(entries: IndexEntry[], sinceDays: number, nowMs = Date.now()): string[] {
-  const cutoffMs = nowMs - sinceDays * 24 * 60 * 60 * 1000;
-  const out = new Set<string>();
-
-  for (const entry of entries) {
-    if (entry.is_dir !== false) {
-      continue;
-    }
-
-    const version = extractVersionFromTarballName(entry.name);
-    if (!version || !entry.last_modified) {
-      continue;
-    }
-
-    const modifiedMs = parseTimestampToUtcMs(entry.last_modified);
-    if (modifiedMs === null) {
-      continue;
-    }
-
-    if (modifiedMs > cutoffMs) {
-      out.add(version);
-    }
+  for (const binaries of grouped.values()) {
+    binaries.sort((a, b) => a.assetName.localeCompare(b.assetName));
   }
 
-  return [...out].sort();
+  return grouped;
 }
 
-export function extractVersionFromTarballName(name: string): string | null {
-  const match = name.match(/^php-([0-9]+\.[0-9]+\.[0-9]+)-cli-.+\.tar\.gz$/);
-  return match?.[1] ?? null;
+export function diffMissingAssets(expected: MatchedBinary[], existingAssetNames: string[]): MatchedBinary[] {
+  const existing = new Set(existingAssetNames);
+  return expected.filter((binary) => !existing.has(binary.assetName));
 }
 
-export function isFullSemver(version: string): boolean {
-  return /^[0-9]+\.[0-9]+\.[0-9]+$/.test(version);
-}
-
-export function resolveVersion(partial: string, available: string[]): string | null {
-  const prefix = partial.endsWith(".") ? partial : `${partial}.`;
-  const matches = available.filter((v) => v === partial || v.startsWith(prefix));
-  if (matches.length === 0) {
-    return null;
-  }
-  return matches.sort(compareSemver).at(-1) ?? null;
-}
-
-function compareSemver(a: string, b: string): number {
-  const pa = a.split(".").map(Number);
-  const pb = b.split(".").map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
-    if (diff !== 0) return diff;
-  }
-  return 0;
-}
-
-function parseTimestampToUtcMs(value: string): number | null {
-  const normalized = value.replace(" ", "T");
-  const date = new Date(`${normalized}Z`);
-  const time = date.getTime();
-  return Number.isNaN(time) ? null : time;
+export function buildVersionPlan(version: string, expectedAssets: MatchedBinary[]): VersionSyncPlan {
+  return {
+    version,
+    tag: `v${version}`,
+    releaseTitle: `PHP v${version}`,
+    expectedAssets: [...expectedAssets].sort((a, b) => a.assetName.localeCompare(b.assetName))
+  };
 }

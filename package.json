@@ -2,9 +2,10 @@
   "name": "php-release-cli",
   "version": "1.0.0",
   "private": true,
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
-    "build": "ncc build src/index.ts -o dist",
+    "sync": "bun run src/index.ts",
+    "sync:dry-run": "bun run src/index.ts --dry-run",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "hooks:install": "husky",
@@ -12,9 +13,11 @@
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
-    "@vercel/ncc": "^0.38.4",
     "bun-types": "^1.3.10",
     "husky": "^9.1.7",
     "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "p-limit": "^7.3.0"
   }
 }

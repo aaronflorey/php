@@ -1,69 +1,69 @@
-# php
+# php-binaries
 
-This repository republishes prebuilt PHP binaries to GitHub Releases.
+This repository mirrors official PHP 8.x CLI binaries from Static PHP into GitHub Releases.
 
-It does **not** compile PHP from source. Instead, it pulls official artifacts from [`crazywhalecc/static-php-cli`](https://github.com/crazywhalecc/static-php-cli), renames them consistently, and publishes them as release assets.
+It does not build PHP. It:
 
-## Where binaries come from
+- reads official release versions from `php.net`
+- limits each minor line to `latest patch - 10` through current
+- checks which CLI binaries exist in `static-php.dev`
+- ensures each matching GitHub release exists
+- uploads any missing assets
 
-- macOS/Linux: [`bulk`](https://dl.static-php.dev/static-php-cli/bulk/)
-- Windows: [`spc-max`](https://dl.static-php.dev/static-php-cli/windows/spc-max/)
+## Sources
 
-This combination gives broad platform coverage while keeping the release process simple.
+- Official PHP releases: `https://www.php.net/releases/?json`
+- Official PHP branch releases: `https://www.php.net/releases/index.php?json&version=8.x`
+- Official PHP changelog history: `https://www.php.net/ChangeLog-8.php`
+- Static PHP binary indexes:
+  - `https://dl.static-php.dev/static-php-cli/bulk/?format=json`
+  - `https://dl.static-php.dev/static-php-cli/windows/spc-max/?format=json`
 
-## How releases are automated
+## Automation
 
-The release logic lives in a Bun + TypeScript CLI and is bundled to `dist/index.js` with `@vercel/ncc`.
-GitHub Actions runs the bundled file, so remember to rebuild `dist/` when CLI behavior changes.
+The repository uses one GitHub Actions workflow:
 
-## CLI usage
+- runs twice a day
+- also supports manual dispatch
+- runs one Bun TypeScript CLI
+- processes versions concurrently with a limit of `5`
+- writes important warnings and outcomes to the GitHub Actions summary
 
-Discover recently updated versions (default window is 2 days):
+If `static-php.dev` does not have CLI binaries for an official PHP release, the run logs a warning and includes it in the job summary instead of creating an empty release.
+
+## Local usage
+
+Install dependencies:
 
 ```bash
-node dist/index.js discover --since-days 2
+bun install
 ```
 
-Dry-run a release (safe local check):
+Dry run:
 
 ```bash
-node dist/index.js release \
-  --version 8.4 \
-  --owner aaronflorey \
-  --repo php \
-  --dry-run
+bun run src/index.ts --dry-run
 ```
 
-Publish or update a release (requires token):
+Run against a specific repository locally:
 
 ```bash
-GITHUB_TOKEN=... node dist/index.js release \
-  --version 8.4 \
-  --owner aaronflorey \
-  --repo php
+GH_TOKEN=... GITHUB_REPOSITORY=owner/repo bun run src/index.ts
 ```
 
-If you see gateway/time-out issues while downloading assets, lower download concurrency:
+Optional flags:
 
-```bash
-node dist/index.js release ... --max-concurrent-downloads 1
+```text
+--dry-run
+--repo owner/repo
+--temp-dir /tmp/php-binaries
+--max-version-concurrency 5
+--max-download-concurrency 5
 ```
 
 ## Development
 
 ```bash
-bun install
-bun run hooks:install
-bun run test
+bun test
 bun run typecheck
-bun run build
-```
-
-## Installing published binaries
-
-The published artifacts work well with [ubi](https://github.com/houseabsolute/ubi).
-If you use [mise](https://github.com/jdx/mise), one option is:
-
-```bash
-mise use github:aaronflorey/php@8.4
 ```
