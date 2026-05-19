@@ -6,6 +6,7 @@
   "scripts": {
     "sync": "bun run src/index.ts",
     "sync:dry-run": "bun run src/index.ts --dry-run",
+    "manifest": "bun run src/generate-manifest.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "hooks:install": "husky",

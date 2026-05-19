@@ -25,9 +25,39 @@ export type VersionSyncPlan = {
   expectedAssets: MatchedBinary[];
 };
 
+export type ReleaseAsset = {
+  name: string;
+  browserDownloadUrl: string;
+};
+
+export type GithubRelease = {
+  tagName: string;
+  assets: ReleaseAsset[];
+};
+
+export type InstallAsset = {
+  fileName: string;
+  url: string;
+  extension: "tar.gz" | "zip";
+};
+
+export type VersionManifestEntry = {
+  version: string;
+  assets: Partial<Record<string, InstallAsset>>;
+};
+
+export type VersionsManifest = {
+  generatedAt: string;
+  repository: string;
+  latest: Record<string, string>;
+  versions: Record<string, VersionManifestEntry>;
+};
+
 const SOURCE_BINARY_PATTERN = /^php-(8\.\d+\.\d+)-cli-(.+)\.(tar\.gz|zip)$/;
+const RELEASE_BINARY_PATTERN = /^php-(8\.\d+\.\d+)-(.+)\.(tar\.gz|zip)$/;
 const CHANGELOG_VERSION_PATTERN = /Version\s+(8\.\d+\.\d+)/g;
 const SOURCE_TARBALL_PATTERN = /^php-(8\.\d+\.\d+)\.tar\.(?:gz|bz2|xz)$/;
+const RELEASE_TAG_PATTERN = /^v(8\.\d+\.\d+)$/;
 
 export function parseVersion(version: string): PhpVersion {
   const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
@@ -117,6 +147,23 @@ export function parseSourceBinaryName(name: string, fullPath: string): MatchedBi
   };
 }
 
+export function parseReleaseTag(tagName: string): string | null {
+  return tagName.match(RELEASE_TAG_PATTERN)?.[1] ?? null;
+}
+
+export function parseReleaseBinaryName(name: string): { version: string; arch: string; extension: "tar.gz" | "zip" } | null {
+  const match = name.match(RELEASE_BINARY_PATTERN);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    version: match[1],
+    arch: match[2],
+    extension: match[3] as "tar.gz" | "zip"
+  };
+}
+
 export function indexBinariesByVersion(files: SourceFile[]): Map<string, MatchedBinary[]> {
   const grouped = new Map<string, MatchedBinary[]>();
 
@@ -151,5 +198,97 @@ export function buildVersionPlan(version: string, expectedAssets: MatchedBinary[
     tag: `v${version}`,
     releaseTitle: `PHP v${version}`,
     expectedAssets: [...expectedAssets].sort((a, b) => a.assetName.localeCompare(b.assetName))
+  };
+}
+
+export function buildVersionsManifest(repository: string, releases: GithubRelease[], generatedAt: string): VersionsManifest {
+  const versions = new Map<string, VersionManifestEntry>();
+
+  for (const release of releases) {
+    const version = parseReleaseTag(release.tagName);
+    if (!version) {
+      continue;
+    }
+
+    const assets: Partial<Record<string, InstallAsset>> = {};
+    for (const asset of release.assets) {
+      const parsed = parseReleaseBinaryName(asset.name);
+      if (!parsed || parsed.version !== version) {
+        continue;
+      }
+
+      assets[parsed.arch] = {
+        fileName: asset.name,
+        url: asset.browserDownloadUrl,
+        extension: parsed.extension
+      };
+    }
+
+    if (Object.keys(assets).length === 0) {
+      continue;
+    }
+
+    versions.set(version, {
+      version,
+      assets: sortRecordByKey(assets)
+    });
+  }
+
+  const sortedVersions = [...versions.keys()].sort(compareVersions);
+  const latest: Record<string, string> = {};
+
+  if (sortedVersions.length > 0) {
+    latest.stable = sortedVersions[sortedVersions.length - 1];
+  }
+
+  for (const version of sortedVersions) {
+    const parsed = parseVersion(version);
+    latest[`${parsed.major}.${parsed.minor}`] = version;
+  }
+
+  return {
+    generatedAt,
+    repository,
+    latest: sortLatestAliases(latest),
+    versions: Object.fromEntries(sortedVersions.map((version) => [version, versions.get(version)!]))
+  };
+}
+
+export function resolveManifestVersion(manifest: VersionsManifest, requestedVersion: string): VersionManifestEntry {
+  const normalized = requestedVersion.trim();
+  const resolvedVersion = normalized === "latest"
+    ? manifest.latest.stable
+    : manifest.latest[normalized] ?? normalized;
+
+  if (!resolvedVersion) {
+    throw new Error("Manifest does not define a stable PHP version.");
+  }
+
+  const match = manifest.versions[resolvedVersion];
+  if (!match) {
+    throw new Error(`PHP version '${requestedVersion}' is not available in versions.json.`);
+  }
+
+  return match;
+}
+
+function sortRecordByKey<T>(input: Partial<Record<string, T>>): Partial<Record<string, T>> {
+  return Object.fromEntries(Object.entries(input).sort((a, b) => a[0].localeCompare(b[0])));
+}
+
+function sortLatestAliases(latest: Record<string, string>): Record<string, string> {
+  const stable = latest.stable;
+  const aliases = Object.entries(latest)
+    .filter(([key]) => key !== "stable")
+    .sort((a, b) => {
+      const left = a[0].split(".").map(Number);
+      const right = b[0].split(".").map(Number);
+      if (left[0] !== right[0]) return left[0] - right[0];
+      return left[1] - right[1];
+    });
+
+  return {
+    ...(stable ? { stable } : {}),
+    ...Object.fromEntries(aliases)
   };
 }

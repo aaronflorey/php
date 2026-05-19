@@ -1,0 +1,32 @@
+name: Test Setup Action
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PHP and Composer from this repo
+        uses: ./
+        with:
+          composer: "true"
+
+      - name: Check PHP
+        shell: pwsh
+        run: php -v
+
+      - name: Check Composer
+        shell: pwsh
+        run: composer --version

@@ -1,0 +1,335 @@
+{
+  "generatedAt": "2026-05-19T07:07:39.039Z",
+  "repository": "aaronflorey/php",
+  "latest": {
+    "stable": "8.5.5",
+    "8.0": "8.0.30",
+    "8.1": "8.1.29",
+    "8.2": "8.2.30",
+    "8.3": "8.3.30",
+    "8.4": "8.4.20",
+    "8.5": "8.5.5"
+  },
+  "versions": {
+    "8.0.30": {
+      "version": "8.0.30",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.0.30-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.0.30/php-8.0.30-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.0.30-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.0.30/php-8.0.30-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.0.30-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.0.30/php-8.0.30-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.0.30-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.0.30/php-8.0.30-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "win": {
+          "fileName": "php-8.0.30-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.0.30/php-8.0.30-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
+    "8.1.27": {
+      "version": "8.1.27",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.1.27-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.27/php-8.1.27-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.1.27-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.27/php-8.1.27-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.1.27-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.27/php-8.1.27-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.1.27-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.27/php-8.1.27-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
+        }
+      }
+    },
+    "8.1.29": {
+      "version": "8.1.29",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.1.29-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.29/php-8.1.29-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.1.29-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.29/php-8.1.29-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.1.29-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.29/php-8.1.29-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.1.29-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.29/php-8.1.29-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "win": {
+          "fileName": "php-8.1.29-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.29/php-8.1.29-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
+    "8.2.30": {
+      "version": "8.2.30",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.2.30-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.2.30/php-8.2.30-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.2.30-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.2.30/php-8.2.30-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.2.30-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.2.30/php-8.2.30-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.2.30-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.2.30/php-8.2.30-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "win": {
+          "fileName": "php-8.2.30-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.2.30/php-8.2.30-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
+    "8.3.30": {
+      "version": "8.3.30",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.3.30-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.3.30/php-8.3.30-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.3.30-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.3.30/php-8.3.30-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.3.30-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.3.30/php-8.3.30-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.3.30-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.3.30/php-8.3.30-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "win": {
+          "fileName": "php-8.3.30-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.3.30/php-8.3.30-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
+    "8.4.18": {
+      "version": "8.4.18",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.4.18-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.18/php-8.4.18-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.4.18-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.18/php-8.4.18-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.4.18-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.18/php-8.4.18-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.4.18-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.18/php-8.4.18-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "win": {
+          "fileName": "php-8.4.18-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.18/php-8.4.18-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
+    "8.4.19": {
+      "version": "8.4.19",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.4.19-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.19/php-8.4.19-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.4.19-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.19/php-8.4.19-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.4.19-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.19/php-8.4.19-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.4.19-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.19/php-8.4.19-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "win": {
+          "fileName": "php-8.4.19-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.19/php-8.4.19-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
+    "8.4.20": {
+      "version": "8.4.20",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.4.20-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.20/php-8.4.20-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.4.20-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.20/php-8.4.20-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.4.20-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.20/php-8.4.20-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.4.20-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.20/php-8.4.20-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "win": {
+          "fileName": "php-8.4.20-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.4.20/php-8.4.20-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
+    "8.5.3": {
+      "version": "8.5.3",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.5.3-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.3/php-8.5.3-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.5.3-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.3/php-8.5.3-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.5.3-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.3/php-8.5.3-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.5.3-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.3/php-8.5.3-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
+        }
+      }
+    },
+    "8.5.4": {
+      "version": "8.5.4",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.5.4-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.4/php-8.5.4-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.5.4-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.4/php-8.5.4-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.5.4-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.4/php-8.5.4-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.5.4-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.4/php-8.5.4-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "win": {
+          "fileName": "php-8.5.4-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.4/php-8.5.4-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
+    "8.5.5": {
+      "version": "8.5.5",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.5.5-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.5/php-8.5.5-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.5.5-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.5/php-8.5.5-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.5.5-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.5/php-8.5.5-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.5.5-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.5/php-8.5.5-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "win": {
+          "fileName": "php-8.5.5-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.5.5/php-8.5.5-win.zip",
+          "extension": "zip"
+        }
+      }
+    }
+  }
+}

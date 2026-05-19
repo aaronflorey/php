@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+  buildVersionsManifest,
   buildReleaseBody,
   buildVersionPlan,
   calculateRetryDelayMs,
@@ -9,10 +10,15 @@ import {
   extractVersionsFromChangelog,
   indexBinariesByVersion,
   isRetryableDownloadStatus,
+  parseReleaseBinaryName,
+  parseReleaseTag,
   parseSourceBinaryName,
   parseVersion,
+  resolveManifestVersion,
   selectVersionsForMinor,
-  type SourceFile
+  type GithubRelease,
+  type SourceFile,
+  type VersionsManifest
 } from "../src/lib";
 
 describe("parseVersion", () => {
@@ -100,6 +106,27 @@ describe("parseSourceBinaryName", () => {
   });
 });
 
+describe("parseReleaseTag", () => {
+  it("extracts version numbers from release tags", () => {
+    expect(parseReleaseTag("v8.4.20")).toBe("8.4.20");
+    expect(parseReleaseTag("8.4.20")).toBeNull();
+  });
+});
+
+describe("parseReleaseBinaryName", () => {
+  it("parses release asset names", () => {
+    expect(parseReleaseBinaryName("php-8.4.20-linux-x86_64.tar.gz")).toEqual({
+      version: "8.4.20",
+      arch: "linux-x86_64",
+      extension: "tar.gz"
+    });
+  });
+
+  it("ignores unrelated release assets", () => {
+    expect(parseReleaseBinaryName("checksums.txt")).toBeNull();
+  });
+});
+
 describe("indexBinariesByVersion", () => {
   it("groups CLI binaries by version and dedupes asset names", () => {
     const files: SourceFile[] = [
@@ -183,5 +210,136 @@ describe("calculateRetryDelayMs", () => {
     expect(calculateRetryDelayMs(2)).toBe(2000);
     expect(calculateRetryDelayMs(3)).toBe(4000);
     expect(calculateRetryDelayMs(5)).toBe(10000);
+  });
+});
+
+describe("buildVersionsManifest", () => {
+  it("keeps only installable releases and builds latest aliases", () => {
+    const releases: GithubRelease[] = [
+      {
+        tagName: "v8.4.19",
+        assets: [
+          {
+            name: "php-8.4.19-linux-x86_64.tar.gz",
+            browserDownloadUrl: "https://example.test/v8.4.19/php-8.4.19-linux-x86_64.tar.gz"
+          }
+        ]
+      },
+      {
+        tagName: "v8.4.20",
+        assets: [
+          {
+            name: "php-8.4.20-linux-aarch64.tar.gz",
+            browserDownloadUrl: "https://example.test/v8.4.20/php-8.4.20-linux-aarch64.tar.gz"
+          },
+          {
+            name: "php-8.4.20-linux-x86_64.tar.gz",
+            browserDownloadUrl: "https://example.test/v8.4.20/php-8.4.20-linux-x86_64.tar.gz"
+          }
+        ]
+      },
+      {
+        tagName: "v8.5.3",
+        assets: [
+          {
+            name: "php-8.5.3-win.zip",
+            browserDownloadUrl: "https://example.test/v8.5.3/php-8.5.3-win.zip"
+          }
+        ]
+      },
+      {
+        tagName: "v8.5.4",
+        assets: []
+      }
+    ];
+
+    expect(buildVersionsManifest("owner/repo", releases, "2026-05-19T00:00:00.000Z")).toEqual({
+      generatedAt: "2026-05-19T00:00:00.000Z",
+      repository: "owner/repo",
+      latest: {
+        stable: "8.5.3",
+        "8.4": "8.4.20",
+        "8.5": "8.5.3"
+      },
+      versions: {
+        "8.4.19": {
+          version: "8.4.19",
+          assets: {
+            "linux-x86_64": {
+              fileName: "php-8.4.19-linux-x86_64.tar.gz",
+              url: "https://example.test/v8.4.19/php-8.4.19-linux-x86_64.tar.gz",
+              extension: "tar.gz"
+            }
+          }
+        },
+        "8.4.20": {
+          version: "8.4.20",
+          assets: {
+            "linux-aarch64": {
+              fileName: "php-8.4.20-linux-aarch64.tar.gz",
+              url: "https://example.test/v8.4.20/php-8.4.20-linux-aarch64.tar.gz",
+              extension: "tar.gz"
+            },
+            "linux-x86_64": {
+              fileName: "php-8.4.20-linux-x86_64.tar.gz",
+              url: "https://example.test/v8.4.20/php-8.4.20-linux-x86_64.tar.gz",
+              extension: "tar.gz"
+            }
+          }
+        },
+        "8.5.3": {
+          version: "8.5.3",
+          assets: {
+            win: {
+              fileName: "php-8.5.3-win.zip",
+              url: "https://example.test/v8.5.3/php-8.5.3-win.zip",
+              extension: "zip"
+            }
+          }
+        }
+      }
+    });
+  });
+});
+
+describe("resolveManifestVersion", () => {
+  const manifest: VersionsManifest = {
+    generatedAt: "2026-05-19T00:00:00.000Z",
+    repository: "owner/repo",
+    latest: {
+      stable: "8.5.3",
+      "8.4": "8.4.20"
+    },
+    versions: {
+      "8.4.20": {
+        version: "8.4.20",
+        assets: {
+          "linux-x86_64": {
+            fileName: "php-8.4.20-linux-x86_64.tar.gz",
+            url: "https://example.test/v8.4.20/php-8.4.20-linux-x86_64.tar.gz",
+            extension: "tar.gz"
+          }
+        }
+      },
+      "8.5.3": {
+        version: "8.5.3",
+        assets: {
+          win: {
+            fileName: "php-8.5.3-win.zip",
+            url: "https://example.test/v8.5.3/php-8.5.3-win.zip",
+            extension: "zip"
+          }
+        }
+      }
+    }
+  };
+
+  it("resolves latest and minor aliases", () => {
+    expect(resolveManifestVersion(manifest, "latest").version).toBe("8.5.3");
+    expect(resolveManifestVersion(manifest, "8.4").version).toBe("8.4.20");
+  });
+
+  it("throws on unknown versions", () => {
+    expect(() => resolveManifestVersion(manifest, "8.2")).toThrow("not available");
   });
 });

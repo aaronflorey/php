@@ -1,0 +1,86 @@
+name: Setup PHP From Releases
+description: Install PHP from this repository's mirrored release binaries.
+
+inputs:
+  php-version:
+    description: PHP version to install. Supports latest, 8.x, or an exact 8.x.y version.
+    required: false
+    default: latest
+  composer:
+    description: Install Composer after PHP is installed.
+    required: false
+    default: "false"
+
+outputs:
+  php-version:
+    description: The resolved PHP version that was installed.
+    value: ${{ steps.resolve.outputs.php-version }}
+  platform-key:
+    description: The release platform key that was installed.
+    value: ${{ steps.resolve.outputs.platform-key }}
+
+runs:
+  using: composite
+  steps:
+    - id: resolve
+      name: Resolve PHP version
+      shell: bash
+      env:
+        INPUT_PHP_VERSION: ${{ inputs.php-version }}
+      run: node "$GITHUB_ACTION_PATH/scripts/resolve-version.mjs"
+
+    - name: Install PHP on Linux and macOS
+      if: runner.os != 'Windows'
+      shell: bash
+      env:
+        PHP_DOWNLOAD_URL: ${{ steps.resolve.outputs.download-url }}
+        PHP_VERSION: ${{ steps.resolve.outputs.php-version }}
+        PLATFORM_KEY: ${{ steps.resolve.outputs.platform-key }}
+      run: |
+        archive_path="$RUNNER_TEMP/php-${PHP_VERSION}-${PLATFORM_KEY}.tar.gz"
+        install_dir="$RUNNER_TEMP/php-${PHP_VERSION}-${PLATFORM_KEY}"
+        mkdir -p "$install_dir"
+        curl -fsSL "$PHP_DOWNLOAD_URL" -o "$archive_path"
+        tar -xzf "$archive_path" -C "$install_dir"
+        chmod +x "$install_dir/php"
+        printf '%s\n' "$install_dir" >> "$GITHUB_PATH"
+
+    - name: Install PHP on Windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      env:
+        PHP_DOWNLOAD_URL: ${{ steps.resolve.outputs.download-url }}
+        PHP_VERSION: ${{ steps.resolve.outputs.php-version }}
+        PLATFORM_KEY: ${{ steps.resolve.outputs.platform-key }}
+      run: |
+        $archivePath = Join-Path $env:RUNNER_TEMP ("php-" + $env:PHP_VERSION + "-" + $env:PLATFORM_KEY + ".zip")
+        $installDir = Join-Path $env:RUNNER_TEMP ("php-" + $env:PHP_VERSION + "-" + $env:PLATFORM_KEY)
+        New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+        Invoke-WebRequest -Uri $env:PHP_DOWNLOAD_URL -OutFile $archivePath
+        Expand-Archive -Path $archivePath -DestinationPath $installDir -Force
+        Add-Content -Path $env:GITHUB_PATH -Value $installDir
+
+    - name: Install Composer on Linux and macOS
+      if: inputs.composer == 'true' && runner.os != 'Windows'
+      shell: bash
+      env:
+        PHP_VERSION: ${{ steps.resolve.outputs.php-version }}
+        PLATFORM_KEY: ${{ steps.resolve.outputs.platform-key }}
+      run: |
+        install_dir="$RUNNER_TEMP/php-${PHP_VERSION}-${PLATFORM_KEY}"
+        curl -fsSL "https://getcomposer.org/download/latest-stable/composer.phar" -o "$install_dir/composer.phar"
+        printf '%s\n' '#!/usr/bin/env sh' 'exec "$(dirname "$0")/php" "$(dirname "$0")/composer.phar" "$@"' > "$install_dir/composer"
+        chmod +x "$install_dir/composer"
+
+    - name: Install Composer on Windows
+      if: inputs.composer == 'true' && runner.os == 'Windows'
+      shell: pwsh
+      env:
+        PHP_VERSION: ${{ steps.resolve.outputs.php-version }}
+        PLATFORM_KEY: ${{ steps.resolve.outputs.platform-key }}
+      run: |
+        $installDir = Join-Path $env:RUNNER_TEMP ("php-" + $env:PHP_VERSION + "-" + $env:PLATFORM_KEY)
+        $composerPhar = Join-Path $installDir "composer.phar"
+        $composerBat = Join-Path $installDir "composer.bat"
+        Invoke-WebRequest -Uri "https://getcomposer.org/download/latest-stable/composer.phar" -OutFile $composerPhar
+        Set-Content -Path $composerBat -Value '@"%~dp0php.exe" "%~dp0composer.phar" %*'

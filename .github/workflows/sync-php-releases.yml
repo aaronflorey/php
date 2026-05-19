@@ -30,3 +30,17 @@ jobs:
 
       - name: Sync official PHP releases
         run: bun run src/index.ts
+
+      - name: Generate install manifest
+        run: bun run src/generate-manifest.ts
+
+      - name: Commit updated install manifest
+        run: |
+          if git diff --quiet -- versions.json; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add versions.json
+          git commit -m "Update versions manifest"
+          git push

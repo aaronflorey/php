@@ -2,6 +2,8 @@
 
 This repository mirrors official PHP 8.x CLI binaries from Static PHP into GitHub Releases.
 
+It also exposes a composite GitHub Action that installs those mirrored binaries in other workflows.
+
 It does not build PHP. It:
 
 - reads official release versions from `php.net`
@@ -19,15 +21,51 @@ It does not build PHP. It:
   - `https://dl.static-php.dev/static-php-cli/bulk/?format=json`
   - `https://dl.static-php.dev/static-php-cli/windows/spc-max/?format=json`
 
+## Setup Action
+
+Use the repository action directly from `@main`:
+
+```yaml
+steps:
+  - uses: actions/checkout@v4
+
+  - uses: aaronflorey/php@main
+    with:
+      php-version: 8.4
+      composer: "true"
+
+  - run: php -v
+  - run: composer --version
+```
+
+Inputs:
+
+- `php-version`: `latest` by default. Accepts `latest`, a minor alias like `8.4`, or an exact version like `8.4.20`.
+- `composer`: `"false"` by default. Set to `"true"` to install Composer after PHP.
+
+The action resolves versions from the checked-in `versions.json` manifest, then downloads the matching GitHub release asset for the current runner.
+
+## Manifest
+
+`versions.json` is generated from GitHub releases that actually contain installable binaries. It includes:
+
+- a `latest.stable` alias for the newest installable release
+- a `latest` alias per minor line like `8.4 -> 8.4.20`
+- stable GitHub release download URLs per platform asset
+
+Releases with no assets are excluded, so action lookups only resolve to installable versions.
+
 ## Automation
 
-The repository uses one GitHub Actions workflow:
+The repository uses two GitHub Actions workflows:
 
 - runs twice a day
 - also supports manual dispatch
 - runs one Bun TypeScript CLI
 - processes versions concurrently with a limit of `5`
 - writes important warnings and outcomes to the GitHub Actions summary
+- regenerates `versions.json` from installable GitHub releases and commits it when it changes
+- smoke-tests the setup action on Linux, macOS, and Windows during `push` and `pull_request`
 
 If `static-php.dev` does not have CLI binaries for an official PHP release, the run logs a warning and includes it in the job summary instead of creating an empty release.
 
@@ -59,6 +97,12 @@ Optional flags:
 --temp-dir /tmp/php-binaries
 --max-version-concurrency 5
 --max-download-concurrency 5
+```
+
+Generate the install manifest locally:
+
+```bash
+bun run manifest --repo owner/repo
 ```
 
 ## Development
