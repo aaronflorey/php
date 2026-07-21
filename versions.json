@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-21T02:07:54.010Z",
+  "generatedAt": "2026-07-21T13:26:22.406Z",
   "repository": "aaronflorey/php",
   "latest": {
     "stable": "8.5.5",
@@ -38,6 +38,31 @@
           "fileName": "php-8.0.30-win.zip",
           "url": "https://github.com/aaronflorey/php/releases/download/v8.0.30/php-8.0.30-win.zip",
           "extension": "zip"
+        }
+      }
+    },
+    "8.1.26": {
+      "version": "8.1.26",
+      "assets": {
+        "linux-aarch64": {
+          "fileName": "php-8.1.26-linux-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.26/php-8.1.26-linux-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "linux-x86_64": {
+          "fileName": "php-8.1.26-linux-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.26/php-8.1.26-linux-x86_64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-aarch64": {
+          "fileName": "php-8.1.26-macos-aarch64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.26/php-8.1.26-macos-aarch64.tar.gz",
+          "extension": "tar.gz"
+        },
+        "macos-x86_64": {
+          "fileName": "php-8.1.26-macos-x86_64.tar.gz",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.26/php-8.1.26-macos-x86_64.tar.gz",
+          "extension": "tar.gz"
         }
       }
     },
