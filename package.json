@@ -8,6 +8,7 @@
     "sync:dry-run": "bun run src/index.ts --dry-run",
     "manifest": "bun run src/generate-manifest.ts",
     "test": "bun test",
+    "test:plugin": "lua test/plugin.test.lua",
     "typecheck": "tsc --noEmit",
     "hooks:install": "husky",
     "prepare": "husky"

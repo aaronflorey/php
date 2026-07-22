@@ -30,3 +30,29 @@ jobs:
       - name: Check Composer
         shell: pwsh
         run: composer --version
+
+  mise-plugin-smoke-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install mise
+        uses: jdx/mise-action@v3
+        with:
+          install: false
+          cache: false
+
+      - name: Install PHP from the local mise plugin
+        shell: pwsh
+        run: |
+          mise plugins link --force php "$env:GITHUB_WORKSPACE"
+          mise install php@latest
+          mise exec php@latest -- php -v

@@ -4,6 +4,8 @@ This repository mirrors official PHP 8.x CLI binaries from Static PHP into GitHu
 
 It also exposes a composite GitHub Action that installs those mirrored binaries in other workflows.
 
+It includes a mise plugin that replaces mise's default PHP backend with these prebuilt binaries.
+
 It does not build PHP. It:
 
 - reads official release versions from `php.net`
@@ -44,6 +46,25 @@ Inputs:
 - `composer`: `"false"` by default. Set to `"true"` to install Composer after PHP.
 
 The action resolves versions from the checked-in `versions.json` manifest, then downloads the matching GitHub release asset for the current runner.
+
+## mise plugin
+
+Install this repository as the `php` plugin. `--force` replaces any PHP plugin that mise already installed from its registry:
+
+```bash
+mise plugins install --force php https://github.com/aaronflorey/php.git
+```
+
+The normal `php` tool name then uses this repository:
+
+```bash
+mise use php@latest
+mise use php@8.4
+mise use php@8.4.20
+mise exec php@8.4 -- php -v
+```
+
+The plugin reads `versions.json`, resolves `latest` and minor aliases, selects the current platform's release asset, and adds the extracted archive root to `PATH`. It supports the Linux and macOS x86_64/aarch64 assets and the Windows assets present in the manifest. Unlike mise's default PHP plugins, it downloads a prebuilt CLI and does not compile PHP locally.
 
 ## Manifest
 
@@ -109,5 +130,6 @@ bun run manifest --repo owner/repo
 
 ```bash
 bun test
+bun run test:plugin
 bun run typecheck
 ```
