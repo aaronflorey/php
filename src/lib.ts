@@ -53,6 +53,12 @@ export type VersionsManifest = {
   versions: Record<string, VersionManifestEntry>;
 };
 
+export function manifestsDiffer(left: VersionsManifest, right: VersionsManifest): boolean {
+  const { generatedAt: _leftGeneratedAt, ...leftContent } = left;
+  const { generatedAt: _rightGeneratedAt, ...rightContent } = right;
+  return JSON.stringify(leftContent) !== JSON.stringify(rightContent);
+}
+
 const SOURCE_BINARY_PATTERN = /^php-(8\.\d+\.\d+)-cli-(.+)\.(tar\.gz|zip)$/;
 const RELEASE_BINARY_PATTERN = /^php-(8\.\d+\.\d+)-(.+)\.(tar\.gz|zip)$/;
 const CHANGELOG_VERSION_PATTERN = /Version\s+(8\.\d+\.\d+)/g;

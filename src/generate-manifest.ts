@@ -1,6 +1,6 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { buildVersionsManifest, type GithubRelease, type ReleaseAsset } from "./lib";
+import { buildVersionsManifest, manifestsDiffer, type GithubRelease, type ReleaseAsset, type VersionsManifest } from "./lib";
 
 type CliOptions = {
   output: string;
@@ -19,6 +19,15 @@ async function main(): Promise<void> {
   const options = parseCliArgs();
   const releases = await fetchGithubReleases(options.repo);
   const manifest = buildVersionsManifest(options.repo, releases, new Date().toISOString());
+  const outputFile = Bun.file(options.output);
+  if (await outputFile.exists()) {
+    const existingManifest = await outputFile.json() as VersionsManifest;
+    if (!manifestsDiffer(existingManifest, manifest)) {
+      console.log(`Install manifest is already up to date at ${options.output}`);
+      return;
+    }
+  }
+
   await Bun.write(options.output, `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(`Wrote ${Object.keys(manifest.versions).length} installable PHP versions to ${options.output}`);
 }
