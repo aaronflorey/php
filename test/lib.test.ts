@@ -10,6 +10,7 @@ import {
   extractVersionsFromChangelog,
   indexBinariesByVersion,
   isRetryableDownloadStatus,
+  manifestsDiffer,
   parseReleaseBinaryName,
   parseReleaseTag,
   parseSourceBinaryName,
@@ -299,6 +300,23 @@ describe("buildVersionsManifest", () => {
         }
       }
     });
+  });
+});
+
+describe("manifestsDiffer", () => {
+  const manifest: VersionsManifest = {
+    generatedAt: "2026-05-19T00:00:00.000Z",
+    repository: "owner/repo",
+    latest: { stable: "8.4.20", "8.4": "8.4.20" },
+    versions: { "8.4.20": { version: "8.4.20", assets: {} } }
+  };
+
+  it("ignores generation timestamp changes", () => {
+    expect(manifestsDiffer(manifest, { ...manifest, generatedAt: "2026-05-20T00:00:00.000Z" })).toBe(false);
+  });
+
+  it("detects install manifest content changes", () => {
+    expect(manifestsDiffer(manifest, { ...manifest, latest: { ...manifest.latest, stable: "8.4.21" } })).toBe(true);
   });
 });
 
