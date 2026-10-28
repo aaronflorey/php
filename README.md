@@ -20,7 +20,7 @@ It does not build PHP. It:
 - Official PHP branch releases: `https://www.php.net/releases/index.php?json&version=8.x`
 - Official PHP changelog history: `https://www.php.net/ChangeLog-8.php`
 - Static PHP binary indexes:
-  - `https://dl.static-php.dev/static-php-cli/bulk/?format=json`
+  - `https://dl.static-php.dev/v3/php-bin/common/?format=json`
   - `https://dl.static-php.dev/static-php-cli/windows/spc-max/?format=json`
 
 ## Setup Action

@@ -95,7 +95,7 @@ export function buildReleaseBody(version: string): string {
     `Changelog: [What's changed in v${version}?](https://www.php.net/ChangeLog-8.php#${version})`,
     "",
     "Mirrored CLI binaries sourced from:",
-    "- https://dl.static-php.dev/static-php-cli/bulk/",
+    "- https://dl.static-php.dev/v3/php-bin/common/",
     "- https://dl.static-php.dev/static-php-cli/windows/spc-max/"
   ].join("\n");
 }
