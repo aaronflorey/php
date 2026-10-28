@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-02T02:28:12.684Z",
+  "generatedAt": "2026-10-28T17:47:54.572Z",
   "repository": "aaronflorey/php",
   "latest": {
     "stable": "8.5.5",
@@ -121,6 +121,26 @@
         }
       }
     },
+    "8.1.30": {
+      "version": "8.1.30",
+      "assets": {
+        "win": {
+          "fileName": "php-8.1.30-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.30/php-8.1.30-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
+    "8.1.31": {
+      "version": "8.1.31",
+      "assets": {
+        "win": {
+          "fileName": "php-8.1.31-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.1.31/php-8.1.31-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
     "8.1.33": {
       "version": "8.1.33",
       "assets": {
@@ -147,6 +167,16 @@
         "win": {
           "fileName": "php-8.1.33-win.zip",
           "url": "https://github.com/aaronflorey/php/releases/download/v8.1.33/php-8.1.33-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
+    "8.2.26": {
+      "version": "8.2.26",
+      "assets": {
+        "win": {
+          "fileName": "php-8.2.26-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.2.26/php-8.2.26-win.zip",
           "extension": "zip"
         }
       }
