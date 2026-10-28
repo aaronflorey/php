@@ -184,7 +184,7 @@ describe("buildReleaseBody", () => {
   it("includes changelog and source references", () => {
     const body = buildReleaseBody("8.4.21");
     expect(body).toContain("ChangeLog-8.php#8.4.21");
-    expect(body).toContain("static-php-cli/bulk");
+    expect(body).toContain("v3/php-bin/common");
     expect(body).toContain("static-php-cli/windows/spc-max");
   });
 });
