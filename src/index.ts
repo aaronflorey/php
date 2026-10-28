@@ -24,7 +24,7 @@ const PHP_RELEASES_URL = "https://www.php.net/releases/?json";
 const PHP_RELEASE_BRANCH_URL = "https://www.php.net/releases/index.php?json&version=";
 const PHP_CHANGELOG_URL = "https://www.php.net/ChangeLog-8.php";
 const STATIC_PHP_INDEXES = [
-  "https://dl.static-php.dev/static-php-cli/bulk/?format=json",
+  "https://dl.static-php.dev/v3/php-bin/common/?format=json",
   "https://dl.static-php.dev/static-php-cli/windows/spc-max/?format=json"
 ];
 const STATIC_PHP_BASE_URL = "https://dl.static-php.dev";
