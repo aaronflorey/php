@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-01T03:52:54.305Z",
+  "generatedAt": "2026-11-09T21:51:03.950Z",
   "repository": "aaronflorey/php",
   "latest": {
     "stable": "8.5.5",
@@ -293,6 +293,16 @@
           "fileName": "php-8.2.32-macos-x86_64.tar.gz",
           "url": "https://github.com/aaronflorey/php/releases/download/v8.2.32/php-8.2.32-macos-x86_64.tar.gz",
           "extension": "tar.gz"
+        }
+      }
+    },
+    "8.3.27": {
+      "version": "8.3.27",
+      "assets": {
+        "win": {
+          "fileName": "php-8.3.27-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.3.27/php-8.3.27-win.zip",
+          "extension": "zip"
         }
       }
     },
