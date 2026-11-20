@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-18T05:36:55.108Z",
+  "generatedAt": "2026-11-20T19:31:10.555Z",
   "repository": "aaronflorey/php",
   "latest": {
     "stable": "8.5.5",
@@ -327,6 +327,16 @@
         "win": {
           "fileName": "php-8.3.27-win.zip",
           "url": "https://github.com/aaronflorey/php/releases/download/v8.3.27/php-8.3.27-win.zip",
+          "extension": "zip"
+        }
+      }
+    },
+    "8.3.28": {
+      "version": "8.3.28",
+      "assets": {
+        "win": {
+          "fileName": "php-8.3.28-win.zip",
+          "url": "https://github.com/aaronflorey/php/releases/download/v8.3.28/php-8.3.28-win.zip",
           "extension": "zip"
         }
       }
